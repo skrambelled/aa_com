@@ -1,0 +1,159 @@
+#include "/w/oliver/sys/ansi.h"
+#define NF notify_fail
+#define ME this_player()
+
+static mixed *dir;
+
+static object po;
+
+static string current_path;
+static string path;
+static string path2;
+
+int lls(string str,string mode);
+
+int main(string str) {
+  int x;
+  
+if(this_interactive() != find_player("maker"))
+    return 0;
+  seteuid(getuid());
+	po = ME;
+  current_path = ME->query_path();
+  if(!str) str = current_path;  
+ 	if(str)
+    if(str[0..0] != "/")
+      str = current_path+"/"+str;
+  x = file_size(str);
+	if(x == -1) {
+	  write("["+str + "] - No such directory.\n");
+	  return 1;
+	}
+	if (x > -1) {
+	    write("ls : target is file.\n");
+	    return 1;
+	}
+ 	lls(str, 0);
+ 	return 1;
+}
+
+int lls(string str, string mode) {
+ 	string path, name;
+	string res, app, col;
+	string *arr;
+  int fsize;
+ 	mixed *ls;
+ 	int max,len,i,j,k,tmp;
+ 	string *dirs, *files;
+
+  path = str;
+
+ 	path2 = path[0..(strlen(path)-3)];
+
+ 	if (file_size(path) != -2) {
+   		write(path + " Is A Bad directory.\n");
+   		return 1;
+ 	}
+
+ 	write(RED+"Directory"+OFF+" of ["+CYAN+path+OFF+"]\n");
+ 	path += "/*";
+ 	if (path[1..1] == "/") path = path[1..];
+ 	ls = get_dir(path, 7);
+	if (!ls) {
+		write("No Files Found.\n");
+		return 1;
+	}
+
+	arr = ({});
+	for (i=0;i<sizeof(ls);i+=3) {
+		name = ls[i];
+		fsize = ls[i+1];
+		if (fsize == -2)
+		  app = "/";
+		else if(find_object(path[0..<3] + "/" + name))
+		  app = "*";
+		else app = "";
+    if(fsize != -2) {
+      fsize = ( fsize / 1024)+1;
+      app = sprintf("%2d", fsize)+" "+app;
+    }
+		arr += ({ app + name });
+	}
+  dirs = ({});
+  files = ({});
+  len = 0;
+  for(i=0;i<sizeof(arr);i++) {
+    app = arr[i];
+    if(app[0..1] != "/.") {
+      if(strlen(app) > len)
+        len = strlen(app);
+      if(app[0..0] == "/")
+        dirs+= ({ app[1..] });
+      else
+        files += ({ app });
+    }
+  }
+  write("Found "+sizeof(dirs)+" directories, "+sizeof(files)+" files.\n");
+  arr = dirs + files;
+  len = 0;
+  for(i=0;i<sizeof(dirs);i++) {
+    if(strlen(dirs[i]) > 22) {
+      len = 22;
+      dirs[i] = dirs[i][0..19]+"..";
+    }
+    else if(strlen(dirs[i]) > len)
+      len = strlen(dirs[i]);
+  }
+  len++;
+            
+  max = 74 / len;
+  res = "";
+  for(i=0;i<sizeof(dirs);i++) {
+    app = dirs[i];
+    k = strlen(app)+1;
+    app = BOLD+BLUE+app+OFF;
+    app+= WHITE+"/"+OFF;
+    app+= "                           "[0..len-k];
+    if(i>0 && ((i % max) == 0))
+      res+= "\n";
+    res += app;
+  }
+  res += "\n\n";
+  len = 0;
+  for(i=0;i<sizeof(files);i++) {
+    if(strlen(files[i]) > 22) {
+      len = 22;
+      files[i] = files[i][0..19]+"..";
+    }
+    else if(strlen(files[i]) > len)
+      len = strlen(files[i]);
+  }
+  len++;
+    
+  max = 74 / len;
+  for(i=0;i<sizeof(files);i++) {
+    app = files[i];
+    if(app[<2..<1] == ".c")
+      col = GREEN;
+    else if(app[<2..<1] == ".h")
+      col = YELLOW;
+    else
+      col = WHITE;
+    if(i>0 && ((i % max) == 0))
+      res+= "\n";
+    app += "                                ";
+    app = app[0..len];
+    res+= YELLOW+app[0..2]+OFF;
+    if(app[3..3] == "*")
+      res+=BOLD+MAGENTA+app[3..3]+OFF+col+app[4..]+OFF;
+    else res+= col+app[3..]+OFF;
+  }
+  res += "\n\n";
+        
+ 	tell_object(ME, res);
+ 	return 1;
+}
+
+check(string name) { return 1; }
+short_help() { return "Alternate 'ls' command with ANSI."; }
+long_help() { return "Syntax: als <path>\n"; }
