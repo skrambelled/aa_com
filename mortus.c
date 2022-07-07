@@ -2,7 +2,10 @@
 #include <calendar.h>
 
 #define SAVEDIR "/w/adinos/misc/coroner/save/"
-inherit "obj/basic/create";
+
+void create() {
+  seteuid(getuid());
+}
 
 int check(string name) { return 1; }
 string short_help() { return "Used to see real dates of mortus logs."; }
