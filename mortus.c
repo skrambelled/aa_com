@@ -3,10 +3,6 @@
 
 #define SAVEDIR "/w/adinos/misc/coroner/save/"
 
-void create() {
-  seteuid(getuid());
-}
-
 int check(string name) { return 1; }
 string short_help() { return "Used to see real dates of mortus logs."; }
 string long_help() { return "Syntax: 'mortus <playername>'\n"; }
@@ -41,6 +37,8 @@ void list_deaths(string s1, string s2, string file) {
 
 int main(string s) {
   string deathfile;
+
+  seteuid(getuid());
   
   if(!s) {
     notify_fail("mortus who?\n");
